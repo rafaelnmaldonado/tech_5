@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+import plotly.graph_objects as go
 
 
 def app():
@@ -27,24 +28,72 @@ def app():
 
     df_2022 = filter_columns(df, ['2020', '2021'])
     df_2022 = cleaning_dataset(df_2022)
-    # st.write(df_2022)
+    st.write(df_2022)
     
     scaler = MinMaxScaler()
     
     
     def criar_modelo(colunas_selecionadas, coluna_y):
-        X = df_2022[colunas_selecionadas]
+        todas_colunas = colunas_selecionadas + [coluna_y]
+        df = df_2022[todas_colunas].dropna()
+        X = df[colunas_selecionadas]
         X = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
-        y = df_2022[coluna_y]
+        y = df[coluna_y]
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
         modelo = RandomForestClassifier(random_state=42)
         modelo.fit(X_train, y_train)
+        
+        st.success("Modelo criado com sucesso!")
 
         y_pred = modelo.predict(X_test)
         acuracia = accuracy_score(y_test, y_pred)
-        st.write(f'Acurácia do modelo: {acuracia*100:.3f}%')
+        st.write(f'Acurácia do modelo: {acuracia*100:.2f}%')
+        
+        importancia = modelo.feature_importances_ * 100
+        
+        colunas = [chave for chave, valor in colunas_modelo.items() if valor in colunas_selecionadas]
+        
+        importancia = list(zip(importancia, colunas))
+        
+        df_imp = pd.DataFrame(importancia, columns=['imp', 'col']).sort_values(by='imp', ascending=False)
+        
+        df_imp['acum'] = df_imp['imp'].cumsum() / df_imp['imp'].sum() * 100
+        
+        fig = go.Figure()
+        
+        fig.add_trace(go.Bar(
+            x=df_imp['col'],
+            y=df_imp['imp'],
+            name='Importância'
+        ))
+        
+        fig.add_trace(go.Scatter(
+            x=df_imp['col'],
+            y=df_imp['acum'],
+            name='Porcentagem Acumulada',
+            yaxis='y2'
+        ))
+        
+        fig.update_layout(
+            title='Gráfico de Pareto das importâncias',
+            yaxis=dict(
+                title='Importância (%)',
+                range=[0, 100]
+            ),
+            yaxis2=dict(
+                title='Porcentagem Acumulada',
+                overlaying='y',
+                side='right',
+                range=[0, 100]
+            ),
+            xaxis=dict(
+                title='Colunas'
+            )
+        )
+        
+        st.plotly_chart(fig)
         
         return modelo
 
@@ -71,12 +120,16 @@ def app():
     
     if colunas_df and coluna_y:
         modelo = criar_modelo(colunas_df, coluna_y)
-        st.success("Modelo criado com sucesso!")
         
         st.write("Caso queira fazer uma previsão, preencha os dados:")
         entradas = {}
         for coluna in colunas:
-            entradas[coluna] = st.text_input(coluna)
+            import math
+            col = colunas_modelo[coluna]
+            min = math.floor(df_2022[col].min())
+            max = math.ceil(df_2022[col].max())
+            
+            entradas[coluna] = st.text_input(coluna, placeholder=f"Entre {min} e {max}")
         botao_previsao = st.button(label='Fazer previsão')
         
         if botao_previsao:
