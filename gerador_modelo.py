@@ -8,6 +8,28 @@ import plotly.graph_objects as go
 
 
 def app():
+    st.title("Gerador de Modelos Preditivos")
+    
+    st.write("Esta aplicação foi desenvolvida para analisar dados de avaliação da ONG Passos Mágicos, proporcionando uma ferramenta interativa e acessível. Ela permite que os analistas de dados construam e avaliem modelos preditivos, visualizem a importância das variáveis e façam previsões com base em novos dados. Isso facilita a compreensão dos padrões e das relações dentro dos dados, oferecendo insights valiosos para tomada de decisões e estudos adicionais.")
+    
+    st.subheader("Funcionalidades")
+    st.write("As funcionalidades criadas para construção foram as seguintes:")
+    
+    st.write("- Normalização e Limpeza de Dados: Os dados são normalizados usando MinMaxScaler, garantindo consistência nas escalas das variáveis. Limpeza de dados para remover entradas inválidas ou incompletas.")
+    
+    st.write("- Treinamento de Modelos Preditivos: Criação de modelos preditivos utilizando Random Forest, com separação dos dados em treino e teste. Cálculo da acurácia do modelo para avaliar sua eficácia.")
+    
+    st.write("- Visualização de Importância das Variáveis: A importância das variáveis é visualizada em um gráfico de Pareto, permitindo a identificação dos fatores mais relevantes para as previsões.")
+    
+    st.write("- Interface de Previsão Interativa: Interface que permite aos usuários inserir novos dados para gerar previsões, oferecendo uma aplicação prática e em tempo real dos modelos preditivos. Esta aplicação não só aprimora a análise de dados para a ONG Passos Mágicos, mas também oferece uma base robusta para estudos futuros e otimização de processos internos.")
+
+    st.subheader("Gerador")
+    
+    st.write("1 - Escolha a Variável Alvo: Selecione a variável que deseja prever.")
+    st.write("2 - Selecione Variáveis Auxiliares: Escolha as variáveis que ajudarão a prever a variável alvo.")
+    st.write('3 - Crie o Modelo: Clique no botão "Criar Modelo" para gerar o modelo preditivo.')
+    st.write('4 - Verifique a Acurácia: O produto exibirá a acurácia do modelo criado.')
+    st.write('5 - Veja o Gráfico de Pareto: Visualize o gráfico de Pareto para entender a importância de cada variável na previsão.')
 
     file_path = './dados_passos.csv'
     pd.set_option('display.max_columns', None)
@@ -21,14 +43,7 @@ def app():
             if any(filter in column for filter in filters): selected_columns[index] = False
         return df[df.columns[selected_columns]]
 
-    def cleaning_dataset(df):
-        _df = df.dropna(subset=df.columns.difference(['NOME']), how='all') 
-        _df = _df[~_df.isna().all(axis=1)] 
-        return _df
-
     df_2022 = filter_columns(df, ['2020', '2021'])
-    df_2022 = cleaning_dataset(df_2022)
-    st.write(df_2022)
     
     scaler = MinMaxScaler()
     
@@ -49,7 +64,7 @@ def app():
 
         y_pred = modelo.predict(X_test)
         acuracia = accuracy_score(y_test, y_pred)
-        st.write(f'Acurácia do modelo: {acuracia*100:.2f}%')
+        st.write(f"##### Acurácia do modelo: {acuracia*100:.2f}%")
         
         importancia = modelo.feature_importances_ * 100
         
@@ -107,11 +122,11 @@ def app():
         colunas_modelo = {"Indice do Desenvolvimento Educacional":"INDE_2022", "Classificação Geral":"CG_2022", "Classificação na Fase":"CF_2022", "Classificação na Turma":"CT_2022", "Nota Português": "NOTA_PORT_2022", "Nota Matemática": "NOTA_MAT_2022", "Nota Inglês": "NOTA_ING_2022", "Indicador de Aprendizado": "IDA_2022", "Indicador de Auto Avaliação": "IAA_2022", "Indicador de Engajamento": "IEG_2022", "Indicador Psicossocial": "IPS_2022"}
         colunas_previsao = {"Pedra": "PEDRA_2022", "Ponto de Virada": "PONTO_VIRADA_2022", "Indicado a Bolsa": "INDICADO_BOLSA_2022"}
         
+        y = st.selectbox("Qual coluna você quer prever?", list(colunas_previsao.keys()))
+        
         colunas = st.multiselect(
             "Quais colunas você quer utilizar para previsão?", list(colunas_modelo.keys())
         )
-        
-        y = st.selectbox("Qual coluna você quer prever?", list(colunas_previsao.keys()))
         
         colunas_df = [colunas_modelo[string] for string in colunas]
         coluna_y = colunas_previsao[y]
@@ -121,7 +136,8 @@ def app():
     if colunas_df and coluna_y:
         modelo = criar_modelo(colunas_df, coluna_y)
         
-        st.write("Caso queira fazer uma previsão, preencha os dados:")
+        st.subheader("Previsão")
+        st.write("Preencha os Dados para Previsão: Insira os valores nas caixas de texto para prever novos resultados. O intervalo permitido para cada variável já está indicado nos campos correspondentes.")
         entradas = {}
         for coluna in colunas:
             import math
@@ -134,8 +150,9 @@ def app():
         
         if botao_previsao:
             colunas_entrada = {colunas_modelo[chave]: valor for chave, valor in entradas.items()} 
+            previsao = fazer_previsao(colunas_entrada, colunas_df, modelo)
             st.success("Previsão efetuada com sucesso!")       
-            st.write(f'{y}: {fazer_previsao(colunas_entrada, colunas_df, modelo)}')
+            st.write(f'{y}: {previsao}')
 
 
     
