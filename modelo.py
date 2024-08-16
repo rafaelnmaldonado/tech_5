@@ -6,9 +6,9 @@ import matplotlib.ticker as ticker
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_curve, roc_auc_score, precision_recall_curve
-from imblearn.over_sampling import SMOTE
 from sklearn.impute import SimpleImputer
 import seaborn as sns
+from imblearn.over_sampling import SMOTE
 
 
 def app():
