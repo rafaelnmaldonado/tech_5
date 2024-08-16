@@ -8,3 +8,4 @@ streamlit==1.34.0
 plotly==5.18.0
 streamlit-option-menu==0.3.12
 imbalanced-learn==0.10.1
+seaborn==0.13.2
